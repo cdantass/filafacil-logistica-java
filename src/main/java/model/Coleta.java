@@ -1,16 +1,25 @@
-package model;
+package com.filafacil.model;
+
+import model.Prioridade;
+import model.StatusColeta;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class Coleta {
 
-    private int id;
-    private String nomeCliente;
-    private String endereco;
-    private int quantidadePacotes;
-    private Prioridade prioridade;
+    private static final DateTimeFormatter FORMATTER =
+            DateTimeFormatter.ofPattern(
+                    "dd/MM/yyyy HH:mm"
+            );
+
+    private final int id;
+    private final String nomeCliente;
+    private final String endereco;
+    private final int quantidadePacotes;
+    private final Prioridade prioridade;
     private StatusColeta status;
-    private LocalDateTime dataCriacao;
+    private final LocalDateTime dataCriacao;
 
     public Coleta(
             int id,
@@ -19,13 +28,32 @@ public class Coleta {
             int quantidadePacotes,
             Prioridade prioridade
     ) {
+        this(
+                id,
+                nomeCliente,
+                endereco,
+                quantidadePacotes,
+                prioridade,
+                StatusColeta.PENDENTE,
+                LocalDateTime.now()
+        );
+    }
+    public Coleta(
+            int id,
+            String nomeCliente,
+            String endereco,
+            int quantidadePacotes,
+            Prioridade prioridade,
+            StatusColeta status,
+            LocalDateTime dataCriacao
+    ) {
         this.id = id;
         this.nomeCliente = nomeCliente;
         this.endereco = endereco;
         this.quantidadePacotes = quantidadePacotes;
         this.prioridade = prioridade;
-        this.status = StatusColeta.PENDENTE;
-        this.dataCriacao = LocalDateTime.now();
+        this.status = status;
+        this.dataCriacao = dataCriacao;
     }
 
     public int getId() {
@@ -65,11 +93,12 @@ public class Coleta {
     @Override
     public String toString() {
         return """
+                
                 --------------------------------
                 ID: %d
                 Cliente: %s
                 Endereço: %s
-                Pacotes: %d
+                Quantidade de pacotes: %d
                 Prioridade: %s
                 Status: %s
                 Data de criação: %s
@@ -82,7 +111,7 @@ public class Coleta {
                         quantidadePacotes,
                         prioridade,
                         status,
-                        dataCriacao
+                        dataCriacao.format(FORMATTER)
                 );
     }
 }
