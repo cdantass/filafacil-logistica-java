@@ -10,10 +10,14 @@ public class Main {
 
         ViaCepClient viaCepClient = new ViaCepClient();
 
-        ArquivoColetaRepository repository =
-                new ArquivoColetaRepository(
-                        "src/main/data/coletas.txt"
+        String caminhoArquivo = System.getenv()
+                .getOrDefault(
+                        "COLETAS_FILE_PATH",
+                        "data/coletas.txt"
                 );
+
+        ArquivoColetaRepository repository =
+                new ArquivoColetaRepository(caminhoArquivo);
 
         AppState appState =
                 new AppState();
