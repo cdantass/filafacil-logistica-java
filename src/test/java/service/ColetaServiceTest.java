@@ -10,12 +10,20 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import repository.ArquivoColetaRepository;
+import repository.ColetaRepository;
 import state.AppState;
-
+import factory.ColetaFactory;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import strategy.EstrategiaPrioridade;
+import strategy.PrioridadeManualStrategy;
+import observer.ColetaObserver;
+import strategy.EstrategiaPrioridade;
+import strategy.PrioridadeManualStrategy;
+
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -35,12 +43,20 @@ class ColetaServiceTest {
     private AppState appState;
     private ViaCepClient viaCepClient;
 
+    ColetaFactory coletaFactory =
+            new ColetaFactory();
+
+    EstrategiaPrioridade estrategiaPrioridade =
+            new PrioridadeManualStrategy();
+
     @BeforeEach
     void configurar() {
         Path arquivoTemporario =
-                diretorioTemporario.resolve("coletas.txt");
+                diretorioTemporario.resolve(
+                        "coletas.txt"
+                );
 
-        ArquivoColetaRepository repository =
+        ColetaRepository repository =
                 new ArquivoColetaRepository(
                         arquivoTemporario.toString()
                 );
@@ -48,10 +64,22 @@ class ColetaServiceTest {
         appState = new AppState();
         viaCepClient = mock(ViaCepClient.class);
 
+        ColetaFactory coletaFactory =
+                new ColetaFactory();
+
+        EstrategiaPrioridade estrategiaPrioridade =
+                new PrioridadeManualStrategy();
+
+        List<ColetaObserver> observers =
+                List.of();
+
         service = new ColetaService(
                 repository,
                 appState,
-                viaCepClient
+                viaCepClient,
+                coletaFactory,
+                estrategiaPrioridade,
+                observers
         );
     }
 

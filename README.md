@@ -15,7 +15,7 @@ Aplicação Java de terminal para gerenciamento de coletas, integrada à ViaCEP 
 - Cadastro de coletas por CEP
 - Consulta automática de endereço pela ViaCEP
 - Listagem e filtros por status e prioridade
-- Atualização de status
+- Atualização e exclusão de coletas
 - Resumo operacional
 - Persistência em arquivo
 - Testes com JUnit 5 e Mockito
@@ -24,25 +24,30 @@ Aplicação Java de terminal para gerenciamento de coletas, integrada à ViaCEP 
 
 Java 21, Maven, Jackson, ViaCEP, JUnit 5, Mockito, Docker, Docker Hub e AWS EC2.
 
-## Executando os testes
+## Padrões de projeto
+
+- **Factory:** centraliza a criação das coletas.
+- **Strategy:** permite trocar a regra de definição de prioridade.
+- **Observer:** notifica a criação e a atualização das coletas.
+- **Repository:** separa a persistência das regras de negócio.
+- **Dependency Injection:** as dependências são criadas no `Main` e injetadas no `ColetaService`.
+
+## Testes e build
 
 ```bash
 mvn clean test
-```
-
-## Gerando o JAR
-
-```bash
 mvn clean package
 ```
 
-O arquivo será gerado em:
+O JAR executável será gerado em:
 
 ```text
 target/filafacil-1.0-SNAPSHOT.jar
 ```
 
-## Executando com Docker
+## Docker
+
+Construa e execute a imagem:
 
 ```bash
 docker build -t filafacil .
@@ -55,33 +60,27 @@ docker run --rm -it \
   filafacil
 ```
 
+O volume `filafacil-data` preserva as coletas após o encerramento do contêiner.
+
 ## Deploy na AWS EC2
 
 A aplicação foi publicada no Docker Hub e executada em uma instância Ubuntu no Amazon EC2.
-
-### Arquitetura
 
 ```text
 Aplicação Java → Imagem Docker → Docker Hub → AWS EC2
 ```
 
-### Imagem publicada
-
-```text
-cauad/filafacil-logistica:1.0
-```
-
-### Configuração da EC2
+### Configuração
 
 - Sistema operacional: Ubuntu
 - Acesso remoto: SSH pela porta 22
 - Execução: Docker
 - Persistência: volume Docker
-- Portas HTTP/HTTPS: não utilizadas
+- Portas HTTP e HTTPS: não utilizadas
 
 ### Executando na EC2
 
-Após conectar à instância por SSH:
+Instale e inicie o Docker:
 
 ```bash
 sudo apt update
@@ -99,18 +98,16 @@ Execute a aplicação:
 
 ```bash
 sudo docker run --rm -it \
-  --name filafacil \
-  -v filafacil-data:/app/data \
+  --name ata:/app/data \
   cauad/filafacil-logistica:1.0
 ```
 
-O volume `filafacil-data` mantém as coletas salvas mesmo depois que o contêiner é removido.
-
 ## Segurança e custos
 
-- A chave `.pem` não deve ser enviada ao GitHubmitado ao IP do responsável.
-- A instância EC2 deve permanecer interrompida quando não estiver em uso.
-- A aplicação não expõe portas HTTP, pois funciona pelo terminal.
+- A chave `.pem` não deve ser enviada ao GitHub.
+- O acesso SSH deve ser limitado ao IP do responsável.
+- A instância EC2 deve ser interrompida quando não estiver em uso.
+- A aplicação não expõe portas HTTP porque funciona pelo terminal.
 
 ## Autor
 

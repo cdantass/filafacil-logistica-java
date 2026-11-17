@@ -69,6 +69,8 @@ public class Menu {
         System.out.println(
                 "6. Exibir resumo operacional"
         );
+        System.out.println("7. Excluir coleta");
+
         System.out.println(
                 "0. Sair"
         );
@@ -83,6 +85,7 @@ public class Menu {
                 case 4 -> filtrarPorPrioridade();
                 case 5 -> atualizarStatus();
                 case 6 -> exibirResumoOperacional();
+                case 7 -> excluirColeta();
                 case 0 -> System.out.println("Encerrando...");
                 default -> System.out.println(
                         "Opção inválida. Tente novamente."
@@ -105,6 +108,22 @@ public class Menu {
             );
         }
     }
+
+    private void excluirColeta() {
+        System.out.println();
+        System.out.println("=== EXCLUSÃO DE COLETA ===");
+
+        int id = lerNumeroPositivo(
+                "ID da coleta: "
+        );
+
+        service.deletar(id);
+
+        System.out.println(
+                "Coleta excluída com sucesso."
+        );
+    }
+
     private void cadastrarColeta() {
         System.out.println();
         System.out.println("=== CADASTRO DE COLETA ===");

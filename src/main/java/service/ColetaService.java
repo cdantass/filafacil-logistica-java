@@ -1,30 +1,46 @@
 package service;
 
 import com.filafacil.model.Coleta;
+import factory.ColetaFactory;
 import integration.EnderecoViaCep;
 import integration.ViaCepClient;
 import model.Prioridade;
 import model.StatusColeta;
-import repository.ArquivoColetaRepository;
+import observer.ColetaObserver;
+import repository.ColetaRepository;
 import state.AppState;
+import strategy.EstrategiaPrioridade;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class ColetaService {
 
-    private final ViaCepClient viaCepClient;
-    private final ArquivoColetaRepository repository;
+    private final ColetaRepository repository;
     private final AppState appState;
+    private final ViaCepClient viaCepClient;
+    private final ColetaFactory coletaFactory;
+    private final EstrategiaPrioridade estrategiaPrioridade;
+    private final List<ColetaObserver> observers;
 
     public ColetaService(
-            ArquivoColetaRepository repository,
+            ColetaRepository repository,
             AppState appState,
-            ViaCepClient viaCepClient
+            ViaCepClient viaCepClient,
+            ColetaFactory coletaFactory,
+            EstrategiaPrioridade estrategiaPrioridade,
+            List<ColetaObserver> observers
     ) {
         this.repository = repository;
         this.appState = appState;
         this.viaCepClient = viaCepClient;
+        this.coletaFactory = coletaFactory;
+        this.estrategiaPrioridade = estrategiaPrioridade;
+
+        this.observers = observers == null
+                ? new ArrayList<>()
+                : new ArrayList<>(observers);
 
         sincronizarEstado();
     }
@@ -35,7 +51,7 @@ public class ColetaService {
             String numero,
             String complemento,
             int quantidadePacotes,
-            Prioridade prioridade
+            Prioridade prioridadeInformada
     ) {
         validarTexto(
                 nomeCliente,
@@ -53,14 +69,22 @@ public class ColetaService {
             );
         }
 
-        if (prioridade == null) {
-            throw new IllegalArgumentException(
-                    "A prioridade é obrigatória."
-            );
-        }
-
         appState.setCarregando(true);
         appState.limparErro();
+
+        Prioridade prioridadeDefinida;
+
+        try {
+            prioridadeDefinida =
+                    estrategiaPrioridade.definirPrioridade(
+                            quantidadePacotes,
+                            prioridadeInformada
+                    );
+        } catch (RuntimeException exception) {
+            registrarErro(exception);
+            appState.setCarregando(false);
+            throw exception;
+        }
 
         return viaCepClient.buscarPorCep(cep)
                 .thenApply(enderecoViaCep -> {
@@ -71,16 +95,17 @@ public class ColetaService {
                                     complemento
                             );
 
-                    Coleta coleta = new Coleta(
+                    Coleta coleta = coletaFactory.criar(
                             repository.gerarProximoId(),
                             nomeCliente.trim(),
                             enderecoCompleto,
                             quantidadePacotes,
-                            prioridade
+                            prioridadeDefinida
                     );
 
                     repository.adicionar(coleta);
                     sincronizarEstado();
+                    notificarCriacao(coleta);
 
                     return coleta;
                 })
@@ -88,94 +113,16 @@ public class ColetaService {
                     appState.setCarregando(false);
 
                     if (exception != null) {
-                        Throwable causa = exception.getCause() != null
-                                ? exception.getCause()
-                                : exception;
+                        Throwable causa =
+                                exception.getCause() != null
+                                        ? exception.getCause()
+                                        : exception;
 
                         appState.setUltimoErro(
                                 causa.getMessage()
                         );
                     }
                 });
-    }
-
-    private String montarEnderecoCompleto(
-            EnderecoViaCep enderecoViaCep,
-            String numero,
-            String complemento
-    ) {
-        StringBuilder endereco = new StringBuilder(
-                enderecoViaCep.formatarEndereco()
-        );
-
-        endereco.append(", nº ")
-                .append(numero.trim());
-
-        if (complemento != null
-                && !complemento.isBlank()) {
-
-            endereco.append(", ")
-                    .append(complemento.trim());
-        }
-
-        endereco.append(", CEP ")
-                .append(enderecoViaCep.cep());
-
-        return endereco.toString();
-    }
-
-    public Coleta cadastrar(
-            String nomeCliente,
-            String endereco,
-            int quantidadePacotes,
-            Prioridade prioridade
-    ) {
-        appState.setCarregando(true);
-        appState.limparErro();
-
-        try {
-            validarTexto(
-                    nomeCliente,
-                    "O nome do cliente é obrigatório."
-            );
-
-            validarTexto(
-                    endereco,
-                    "O endereço é obrigatório."
-            );
-
-            if (quantidadePacotes <= 0) {
-                throw new IllegalArgumentException(
-                        "A quantidade de pacotes deve ser maior que zero."
-                );
-            }
-
-            if (prioridade == null) {
-                throw new IllegalArgumentException(
-                        "A prioridade é obrigatória."
-                );
-            }
-
-            Coleta coleta = new Coleta(
-                    repository.gerarProximoId(),
-                    nomeCliente.trim(),
-                    endereco.trim(),
-                    quantidadePacotes,
-                    prioridade
-            );
-
-            repository.adicionar(coleta);
-            sincronizarEstado();
-
-            return coleta;
-
-        } catch (RuntimeException exception) {
-            registrarErro(exception);
-            throw exception;
-
-        } finally {
-            appState.setCarregando(false);
-        }
     }
 
     public List<Coleta> listarTodas() {
@@ -224,11 +171,7 @@ public class ColetaService {
             int id,
             StatusColeta novoStatus
     ) {
-        if (id <= 0) {
-            throw new IllegalArgumentException(
-                    "O identificador deve ser maior que zero."
-            );
-        }
+        validarId(id);
 
         if (novoStatus == null) {
             throw new IllegalArgumentException(
@@ -240,6 +183,16 @@ public class ColetaService {
         appState.limparErro();
 
         try {
+            Coleta coletaAnterior = repository.buscarPorId(id)
+                    .orElseThrow(() ->
+                            new IllegalArgumentException(
+                                    "Coleta não encontrada para atualização."
+                            )
+                    );
+
+            StatusColeta statusAnterior =
+                    coletaAnterior.getStatus();
+
             Coleta coletaAtualizada =
                     repository.atualizarStatus(
                             id,
@@ -247,6 +200,11 @@ public class ColetaService {
                     );
 
             sincronizarEstado();
+
+            notificarAtualizacao(
+                    coletaAtualizada,
+                    statusAnterior
+            );
 
             return coletaAtualizada;
 
@@ -256,6 +214,59 @@ public class ColetaService {
 
         } finally {
             appState.setCarregando(false);
+        }
+    }
+
+    public void deletar(int id) {
+        validarId(id);
+
+        appState.setCarregando(true);
+        appState.limparErro();
+
+        try {
+            repository.deletarPorId(id);
+            sincronizarEstado();
+
+        } catch (RuntimeException exception) {
+            registrarErro(exception);
+            throw exception;
+
+        } finally {
+            appState.setCarregando(false);
+        }
+    }
+
+    private void notificarCriacao(
+            Coleta coleta
+    ) {
+        for (ColetaObserver observer : observers) {
+            try {
+                observer.aoCriar(coleta);
+            } catch (RuntimeException exception) {
+                System.err.println(
+                        "Falha ao notificar criação: "
+                                + exception.getMessage()
+                );
+            }
+        }
+    }
+
+    private void notificarAtualizacao(
+            Coleta coleta,
+            StatusColeta statusAnterior
+    ) {
+        for (ColetaObserver observer : observers) {
+            try {
+                observer.aoAtualizarStatus(
+                        coleta,
+                        statusAnterior
+                );
+            } catch (RuntimeException exception) {
+                System.err.println(
+                        "Falha ao notificar atualização: "
+                                + exception.getMessage()
+                );
+            }
         }
     }
 
@@ -289,6 +300,32 @@ public class ColetaService {
         return appState;
     }
 
+    private String montarEnderecoCompleto(
+            EnderecoViaCep enderecoViaCep,
+            String numero,
+            String complemento
+    ) {
+        StringBuilder endereco =
+                new StringBuilder(
+                        enderecoViaCep.formatarEndereco()
+                );
+
+        endereco.append(", nº ")
+                .append(numero.trim());
+
+        if (complemento != null
+                && !complemento.isBlank()) {
+
+            endereco.append(", ")
+                    .append(complemento.trim());
+        }
+
+        endereco.append(", CEP ")
+                .append(enderecoViaCep.cep());
+
+        return endereco.toString();
+    }
+
     private void sincronizarEstado() {
         appState.setColetas(
                 repository.listarTodas()
@@ -301,6 +338,14 @@ public class ColetaService {
         appState.setUltimoErro(
                 exception.getMessage()
         );
+    }
+
+    private void validarId(int id) {
+        if (id <= 0) {
+            throw new IllegalArgumentException(
+                    "O identificador deve ser maior que zero."
+            );
+        }
     }
 
     private void validarTexto(
