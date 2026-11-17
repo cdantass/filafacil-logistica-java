@@ -2,8 +2,9 @@ package view;
 
 import com.filafacil.model.Coleta;
 import model.Prioridade;
+import model.StatusColeta;
 import service.ColetaService;
-
+import java.util.concurrent.CompletionException;
 import java.util.List;
 import java.util.Scanner;
 
@@ -73,63 +74,59 @@ public class Menu {
         );
     }
 
-    private void executarOpcao(
-            int opcao
-    ) {
+    private void executarOpcao(int opcao) {
+        try {
+            switch (opcao) {
+                case 1 -> cadastrarColeta();
+                case 2 -> listarColetas();
+                case 3 -> filtrarPorStatus();
+                case 4 -> filtrarPorPrioridade();
+                case 5 -> atualizarStatus();
+                case 6 -> exibirResumoOperacional();
+                case 0 -> System.out.println("Encerrando...");
+                default -> System.out.println(
+                        "Opção inválida. Tente novamente."
+                );
+            }
+        } catch (CompletionException exception) {
+            Throwable causa = exception.getCause();
 
-        switch (opcao) {
+            String mensagem = causa != null
+                    ? causa.getMessage()
+                    : exception.getMessage();
 
-            case 1 -> cadastrarColeta();
+            System.out.println("Erro: " + mensagem);
 
-            case 2 -> listarColetas();
+        } catch (IllegalArgumentException |
+                 IllegalStateException exception) {
 
-            case 3 ->
-                    funcionalidadeEmConstrucao(
-                            "Filtro por status"
-                    );
-
-            case 4 ->
-                    funcionalidadeEmConstrucao(
-                            "Filtro por prioridade"
-                    );
-
-            case 5 ->
-                    funcionalidadeEmConstrucao(
-                            "Atualização de status"
-                    );
-
-            case 6 ->
-                    funcionalidadeEmConstrucao(
-                            "Resumo operacional"
-                    );
-
-            case 0 ->
-                    System.out.println(
-                            "Encerrando..."
-                    );
-
-            default ->
-                    System.out.println(
-                            "Opção inválida. Tente novamente."
-                    );
+            System.out.println(
+                    "Erro: " + exception.getMessage()
+            );
         }
     }
-
     private void cadastrarColeta() {
-
         System.out.println();
-        System.out.println(
-                "=== CADASTRO DE COLETA ==="
-        );
+        System.out.println("=== CADASTRO DE COLETA ===");
 
         String nomeCliente =
                 lerTextoObrigatorio(
                         "Nome do cliente: "
                 );
 
-        String endereco =
+        String cep =
                 lerTextoObrigatorio(
-                        "Endereço da coleta: "
+                        "CEP da coleta: "
+                );
+
+        String numero =
+                lerTextoObrigatorio(
+                        "Número do endereço: "
+                );
+
+        String complemento =
+                lerTextoOpcional(
+                        "Complemento, pressione Enter para ignorar: "
                 );
 
         int quantidadePacotes =
@@ -140,37 +137,31 @@ public class Menu {
         Prioridade prioridade =
                 lerPrioridade();
 
-        try {
-            Coleta coleta =
-                    service.cadastrar(
-                            nomeCliente,
-                            endereco,
-                            quantidadePacotes,
-                            prioridade
-                    );
+        System.out.println();
+        System.out.println("Consultando o CEP...");
 
-            System.out.println();
-            System.out.println(
-                    "Coleta cadastrada com sucesso!"
-            );
+        Coleta coleta = service.cadastrarPorCep(
+                nomeCliente,
+                cep,
+                numero,
+                complemento,
+                quantidadePacotes,
+                prioridade
+        ).join();
 
-            System.out.println(
-                    "Identificador: "
-                            + coleta.getId()
-            );
+        System.out.println();
+        System.out.println("Coleta cadastrada com sucesso!");
+        System.out.println("Identificador: " + coleta.getId());
+        System.out.println("Endereço: " + coleta.getEndereco());
+        System.out.println("Status inicial: " + coleta.getStatus());
+    }
 
-            System.out.println(
-                    "Status inicial: "
-                            + coleta.getStatus()
-            );
+    private String lerTextoOpcional(
+            String mensagem
+    ) {
+        System.out.print(mensagem);
 
-        } catch (IllegalArgumentException exception) {
-
-            System.out.println(
-                    "Erro: "
-                            + exception.getMessage()
-            );
-        }
+        return scanner.nextLine().trim();
     }
 
     private void listarColetas() {
@@ -271,6 +262,113 @@ public class Menu {
         }
     }
 
+    private void filtrarPorStatus() {
+        System.out.println();
+        System.out.println("=== FILTRO POR STATUS ===");
+
+        StatusColeta status = lerStatus();
+
+        exibirColetas(
+                service.filtrarPorStatus(status),
+                "Nenhuma coleta encontrada com o status informado."
+        );
+    }
+
+    private void filtrarPorPrioridade() {
+        System.out.println();
+        System.out.println("=== FILTRO POR PRIORIDADE ===");
+
+        Prioridade prioridade = lerPrioridade();
+
+        exibirColetas(
+                service.filtrarPorPrioridade(prioridade),
+                "Nenhuma coleta encontrada com a prioridade informada."
+        );
+    }
+
+    private void atualizarStatus() {
+        System.out.println();
+        System.out.println("=== ATUALIZAÇÃO DE STATUS ===");
+
+        int id = lerNumeroPositivo("ID da coleta: ");
+        StatusColeta novoStatus = lerStatus();
+
+        Coleta coleta = service.atualizarStatus(
+                id,
+                novoStatus
+        );
+
+        System.out.println();
+        System.out.println("Status atualizado com sucesso.");
+        System.out.println("Coleta: " + coleta.getId());
+        System.out.println("Novo status: " + coleta.getStatus());
+    }
+
+    private void exibirResumoOperacional() {
+        List<Coleta> coletas = service.listarTodas();
+
+        System.out.println();
+        System.out.println("=== RESUMO OPERACIONAL ===");
+        System.out.println("Total de coletas: " + coletas.size());
+        System.out.println(
+                "Pendentes: "
+                        + service.contarPorStatus(StatusColeta.PENDENTE)
+        );
+        System.out.println(
+                "Em andamento: "
+                        + service.contarPorStatus(StatusColeta.EM_ANDAMENTO)
+        );
+        System.out.println(
+                "Concluídas: "
+                        + service.contarPorStatus(StatusColeta.CONCLUIDA)
+        );
+        System.out.println(
+                "Total de pacotes: "
+                        + service.calcularTotalPacotes()
+        );
+    }
+
+    private void exibirColetas(
+            List<Coleta> coletas,
+            String mensagemListaVazia
+    ) {
+        if (coletas.isEmpty()) {
+            System.out.println(mensagemListaVazia);
+            return;
+        }
+
+        coletas.forEach(System.out::println);
+
+        System.out.println(
+                "Total encontrado: " + coletas.size()
+        );
+    }
+
+    private StatusColeta lerStatus() {
+        while (true) {
+            System.out.println();
+            System.out.println("Status:");
+            System.out.println("1. Pendente");
+            System.out.println("2. Em andamento");
+            System.out.println("3. Concluída");
+
+            int opcao = lerNumeroInteiro(
+                    "Escolha o status: "
+            );
+
+            switch (opcao) {
+                case 1:
+                    return StatusColeta.PENDENTE;
+                case 2:
+                    return StatusColeta.EM_ANDAMENTO;
+                case 3:
+                    return StatusColeta.CONCLUIDA;
+                default:
+                    System.out.println("Status inválido.");
+            }
+        }
+    }
+
     private Prioridade lerPrioridade() {
 
         while (true) {
@@ -311,14 +409,5 @@ public class Menu {
                     );
             }
         }
-    }
-
-    private void funcionalidadeEmConstrucao(
-            String funcionalidade
-    ) {
-        System.out.println(
-                funcionalidade
-                        + " será implementada na próxima fase."
-        );
     }
 }
