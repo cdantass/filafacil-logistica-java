@@ -109,6 +109,20 @@ sudo docker run --rm -it \
 - A instância EC2 deve ser interrompida quando não estiver em uso.
 - A aplicação não expõe portas HTTP porque funciona pelo terminal.
 
+## Banco de Dados
+
+- PostgreSQL
+- Flyway
+- Docker Compose
+
+## Executando o banco
+
+docker compose up -d
+
+## Migrations
+
+Executadas automaticamente pelo Flyway
+
 ## Autor
 
 **Cauã Dantas Barbosa**

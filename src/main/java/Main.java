@@ -1,10 +1,14 @@
 import factory.ColetaFactory;
 import integration.ViaCepClient;
+import observer.AuditoriaObserver;
 import observer.ColetaObserver;
 import observer.ContadorColetasObserver;
 import observer.LogOperacionalObserver;
-import repository.ArquivoColetaRepository;
+import org.flywaydb.core.Flyway;
+import repository.AuditoriaRepository;
 import repository.ColetaRepository;
+import repository.PostgresAuditoriaRepository;
+import repository.PostgresColetaRepository;
 import service.ColetaService;
 import state.AppState;
 import strategy.EstrategiaPrioridade;
@@ -17,17 +21,22 @@ public class Main {
 
     public static void main(String[] args) {
 
-        String caminhoArquivo =
-                System.getenv()
-                        .getOrDefault(
-                                "COLETAS_FILE_PATH",
-                                "data/coletas.txt"
-                        );
+        Flyway flyway =
+                Flyway.configure()
+                        .dataSource(
+                                "jdbc:postgresql://localhost:5432/filafacil",
+                                "postgres",
+                                "2604"
+                        )
+                        .load();
+
+        flyway.migrate();
 
         ColetaRepository repository =
-                new ArquivoColetaRepository(
-                        caminhoArquivo
-                );
+                new PostgresColetaRepository();
+
+        AuditoriaRepository auditoriaRepository =
+                new PostgresAuditoriaRepository();
 
         AppState appState =
                 new AppState();
@@ -44,7 +53,10 @@ public class Main {
         List<ColetaObserver> observers =
                 List.of(
                         new LogOperacionalObserver(),
-                        new ContadorColetasObserver()
+                        new ContadorColetasObserver(),
+                        new AuditoriaObserver(
+                                auditoriaRepository
+                        )
                 );
 
         ColetaService service =
