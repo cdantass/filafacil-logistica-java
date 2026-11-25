@@ -1,4 +1,5 @@
 services:
+
   postgres:
     image: postgres:17
     container_name: filafacil-postgres
@@ -8,8 +9,15 @@ services:
       POSTGRES_PASSWORD: 2604
     ports:
       - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
 
-volumes:
-  postgres_data:
+  redis:
+    image: redis:8
+    container_name: filafacil-redis
+    ports:
+      - "6379:6379"
+
+  mongodb:
+    image: mongo
+    container_name: filafacil-mongodb
+    ports:
+      - "27017:27017"

@@ -1,36 +1,37 @@
 package observer;
 
 import com.filafacil.model.Coleta;
-import model.Auditoria;
+import model.EventoAuditoria;
 import model.StatusColeta;
-import repository.AuditoriaRepository;
+import repository.MongoAuditoriaRepository;
 
 import java.time.LocalDateTime;
 
 public class AuditoriaObserver
         implements ColetaObserver {
 
-    private final AuditoriaRepository auditoriaRepository;
+    private final MongoAuditoriaRepository repository;
 
     public AuditoriaObserver(
-            AuditoriaRepository auditoriaRepository
+            MongoAuditoriaRepository repository
     ) {
-        this.auditoriaRepository =
-                auditoriaRepository;
+        this.repository = repository;
     }
 
     @Override
     public void aoCriar(Coleta coleta) {
 
-        auditoriaRepository.salvar(
-                new Auditoria(
-                        (long) coleta.getId(),
+        EventoAuditoria evento =
+                new EventoAuditoria(
                         "CRIACAO",
-                        "Coleta criada para o cliente "
-                                + coleta.getNomeCliente(),
+                        "sistema",
+                        "coleta",
+                        null,
+                        coleta.toString(),
                         LocalDateTime.now()
-                )
-        );
+                );
+
+        repository.salvar(evento);
     }
 
     @Override
@@ -39,16 +40,16 @@ public class AuditoriaObserver
             StatusColeta statusAnterior
     ) {
 
-        auditoriaRepository.salvar(
-                new Auditoria(
-                        (long) coleta.getId(),
+        EventoAuditoria evento =
+                new EventoAuditoria(
                         "ALTERACAO_STATUS",
-                        "Status alterado de "
-                                + statusAnterior
-                                + " para "
-                                + coleta.getStatus(),
+                        "sistema",
+                        "coleta",
+                        statusAnterior.name(),
+                        coleta.getStatus().name(),
                         LocalDateTime.now()
-                )
-        );
+                );
+
+        repository.salvar(evento);
     }
 }

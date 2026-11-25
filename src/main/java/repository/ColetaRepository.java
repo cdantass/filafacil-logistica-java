@@ -22,4 +22,13 @@ public interface ColetaRepository {
     );
 
     void deletarPorId(int id);
+
+    List<Coleta> listarPaginado(
+            int pagina,
+            int tamanhoPagina
+    );
+
+    List<Coleta> listarPorStatus(
+            StatusColeta status
+    );
 }

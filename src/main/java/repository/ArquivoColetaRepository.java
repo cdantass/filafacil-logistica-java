@@ -123,6 +123,16 @@ public class ArquivoColetaRepository
         }
     }
 
+    @Override
+    public List<Coleta> listarPaginado(int pagina, int tamanhoPagina) {
+        return List.of();
+    }
+
+    @Override
+    public List<Coleta> listarPorStatus(StatusColeta status) {
+        return List.of();
+    }
+
     private void salvar() {
         try {
             Path diretorio =

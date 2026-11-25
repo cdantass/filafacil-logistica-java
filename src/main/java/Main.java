@@ -5,11 +5,10 @@ import observer.ColetaObserver;
 import observer.ContadorColetasObserver;
 import observer.LogOperacionalObserver;
 import org.flywaydb.core.Flyway;
-import repository.AuditoriaRepository;
-import repository.ColetaRepository;
-import repository.PostgresAuditoriaRepository;
-import repository.PostgresColetaRepository;
+import repository.*;
+import service.CacheService;
 import service.ColetaService;
+import service.RelatorioService;
 import state.AppState;
 import strategy.EstrategiaPrioridade;
 import strategy.PrioridadeManualStrategy;
@@ -35,8 +34,20 @@ public class Main {
         ColetaRepository repository =
                 new PostgresColetaRepository();
 
-        AuditoriaRepository auditoriaRepository =
-                new PostgresAuditoriaRepository();
+        MongoAuditoriaRepository auditoriaRepository =
+                new MongoAuditoriaRepository();
+
+        RelatorioRepository relatorioRepository =
+                new PostgresRelatorioRepository();
+
+        CacheService cacheService =
+                new CacheService();
+
+        RelatorioService relatorioService =
+                new RelatorioService(
+                        relatorioRepository,
+                        cacheService
+                );
 
         AppState appState =
                 new AppState();
@@ -70,7 +81,10 @@ public class Main {
                 );
 
         Menu menu =
-                new Menu(service);
+                new Menu(
+                        service,
+                        relatorioService
+                );
 
         menu.iniciar();
     }

@@ -1,127 +1,81 @@
-<div align="center">
-
 # 🚚 FilaFácil Logística
 
-Aplicação Java de terminal para gerenciamento de coletas, integrada à ViaCEP e executada na AWS EC2 com Docker.
+Sistema de gerenciamento de coletas desenvolvido em Java para simular operações logísticas, com integração ViaCEP, persistência relacional, cache e auditoria de eventos.
 
-![Java](https://img.shields.io/badge/Java-21-ED8B00?style=flat-square&logo=openjdk&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white)
-![AWS](https://img.shields.io/badge/AWS-EC2-FF9900?style=flat-square&logo=amazonwebservices&logoColor=white)
+## Tecnologias
 
-</div>
+- Java 21
+- PostgreSQL
+- Flyway
+- Redis
+- MongoDB
+- Docker e Docker Compose
+- Maven
+- JUnit 5
+- Mockito
 
 ## Funcionalidades
 
 - Cadastro de coletas por CEP
-- Consulta automática de endereço pela ViaCEP
+- Consulta automática de endereço via ViaCEP
 - Listagem e filtros por status e prioridade
-- Atualização e exclusão de coletas
-- Resumo operacional
-- Persistência em arquivo
-- Testes com JUnit 5 e Mockito
+- Atualização de status
+- Exclusão de coletas
+- Relatórios operacionais
+- Cache de relatórios com Redis
+- Auditoria de eventos com MongoDB
 
-## Tecnologias
+## Arquitetura
 
-Java 21, Maven, Jackson, ViaCEP, JUnit 5, Mockito, Docker, Docker Hub e AWS EC2.
+### PostgreSQL
+Persistência principal das coletas.
 
-## Padrões de projeto
+### Redis
+Cache de relatórios com expiração automática (TTL).
 
-- **Factory:** centraliza a criação das coletas.
-- **Strategy:** permite trocar a regra de definição de prioridade.
-- **Observer:** notifica a criação e a atualização das coletas.
-- **Repository:** separa a persistência das regras de negócio.
-- **Dependency Injection:** as dependências são criadas no `Main` e injetadas no `ColetaService`.
+### MongoDB
+Armazenamento flexível de eventos de auditoria.
 
-## Testes e build
+### Flyway
+Controle de versão e execução automática das migrations.
 
-```bash
-mvn clean test
-mvn clean package
-```
+## Padrões de Projeto
 
-O JAR executável será gerado em:
+- Factory
+- Strategy
+- Observer
+- Repository
+- Dependency Injection
 
-```text
-target/filafacil-1.0-SNAPSHOT.jar
-```
+## Executando
 
-## Docker
-
-Construa e execute a imagem:
+Subir infraestrutura:
 
 ```bash
-docker build -t filafacil .
-```
-
-```bash
-docker run --rm -it \
-  --name filafacil \
-  -v filafacil-data:/app/data \
-  filafacil
-```
-
-O volume `filafacil-data` preserva as coletas após o encerramento do contêiner.
-
-## Deploy na AWS EC2
-
-A aplicação foi publicada no Docker Hub e executada em uma instância Ubuntu no Amazon EC2.
-
-```text
-Aplicação Java → Imagem Docker → Docker Hub → AWS EC2
-```
-
-### Configuração
-
-- Sistema operacional: Ubuntu
-- Acesso remoto: SSH pela porta 22
-- Execução: Docker
-- Persistência: volume Docker
-- Portas HTTP e HTTPS: não utilizadas
-
-### Executando na EC2
-
-Instale e inicie o Docker:
-
-```bash
-sudo apt update
-sudo apt install -y docker.io
-sudo systemctl enable --now docker
-```
-
-Baixe a imagem:
-
-```bash
-sudo docker pull cauad/filafacil-logistica:1.0
-```
-
-Execute a aplicação:
-
-```bash
-sudo docker run --rm -it \
-  --name ata:/app/data \
-  cauad/filafacil-logistica:1.0
-```
-
-## Segurança e custos
-
-- A chave `.pem` não deve ser enviada ao GitHub.
-- O acesso SSH deve ser limitado ao IP do responsável.
-- A instância EC2 deve ser interrompida quando não estiver em uso.
-- A aplicação não expõe portas HTTP porque funciona pelo terminal.
-
-## Banco de Dados
-
-- PostgreSQL
-- Flyway
-- Docker Compose
-
-## Executando o banco
-
 docker compose up -d
+```
 
-## Migrations
+Executar aplicação:
 
-Executadas automaticamente pelo Flyway
+```bash
+mvn clean package
+java -jar target/filafacil-1.0-SNAPSHOT.jar
+```
+
+## Estrutura
+
+```text
+src
+├── config
+├── factory
+├── integration
+├── model
+├── observer
+├── repository
+├── service
+├── strategy
+└── view
+```
 
 ## Autor
 

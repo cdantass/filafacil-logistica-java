@@ -4,6 +4,8 @@ import com.filafacil.model.Coleta;
 import model.Prioridade;
 import model.StatusColeta;
 import service.ColetaService;
+import service.RelatorioService;
+
 import java.util.concurrent.CompletionException;
 import java.util.List;
 import java.util.Scanner;
@@ -12,11 +14,13 @@ public class Menu {
 
     private final Scanner scanner;
     private final ColetaService service;
+    private final RelatorioService relatorioService;
 
     public Menu(
-            ColetaService service
+            ColetaService service, RelatorioService relatorioService
     ) {
         this.service = service;
+        this.relatorioService = relatorioService;
         this.scanner = new Scanner(System.in);
     }
 
@@ -72,8 +76,13 @@ public class Menu {
         System.out.println("7. Excluir coleta");
 
         System.out.println(
+                "8. Relatórios"
+        );
+
+        System.out.println(
                 "0. Sair"
         );
+
     }
 
     private void executarOpcao(int opcao) {
@@ -86,6 +95,7 @@ public class Menu {
                 case 5 -> atualizarStatus();
                 case 6 -> exibirResumoOperacional();
                 case 7 -> excluirColeta();
+                case 8 -> exibirRelatorios();
                 case 0 -> System.out.println("Encerrando...");
                 default -> System.out.println(
                         "Opção inválida. Tente novamente."
@@ -107,6 +117,13 @@ public class Menu {
                     "Erro: " + exception.getMessage()
             );
         }
+    }
+
+    private void exibirRelatorios() {
+
+        relatorioService.exibirRelatorioStatus();
+
+        relatorioService.exibirRelatorioPrioridade();
     }
 
     private void excluirColeta() {

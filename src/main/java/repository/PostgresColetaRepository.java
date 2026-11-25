@@ -317,4 +317,127 @@ public class PostgresColetaRepository implements ColetaRepository {
             );
         }
     }
+    @Override
+    public List<Coleta> listarPaginado(
+            int pagina,
+            int tamanhoPagina
+    ) {
+
+        int offset =
+                (pagina - 1) * tamanhoPagina;
+
+        String sql = """
+        SELECT *
+        FROM coleta
+        ORDER BY id
+        LIMIT ?
+        OFFSET ?
+        """;
+
+        List<Coleta> coletas =
+                new ArrayList<>();
+
+        try (
+                Connection conn =
+                        ConnectionFactory.getConnection();
+
+                PreparedStatement stmt =
+                        conn.prepareStatement(sql)
+        ) {
+
+            stmt.setInt(1, tamanhoPagina);
+            stmt.setInt(2, offset);
+
+            try (
+                    ResultSet rs =
+                            stmt.executeQuery()
+            ) {
+
+                while (rs.next()) {
+
+                    coletas.add(
+                            new Coleta(
+                                    rs.getInt("id"),
+                                    rs.getString("cliente"),
+                                    rs.getString("endereco"),
+                                    rs.getInt("quantidade_itens"),
+                                    Prioridade.valueOf(
+                                            rs.getString("prioridade")
+                                    ),
+                                    StatusColeta.valueOf(
+                                            rs.getString("status")
+                                    ),
+                                    rs.getTimestamp("data_criacao")
+                                            .toLocalDateTime()
+                            )
+                    );
+                }
+            }
+
+            return coletas;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+    @Override
+    public List<Coleta> listarPorStatus(
+            StatusColeta status
+    ) {
+
+        String sql = """
+        SELECT *
+        FROM coleta
+        WHERE status = ?
+        ORDER BY id
+        """;
+
+        List<Coleta> coletas =
+                new ArrayList<>();
+
+        try (
+                Connection conn =
+                        ConnectionFactory.getConnection();
+
+                PreparedStatement stmt =
+                        conn.prepareStatement(sql)
+        ) {
+
+            stmt.setString(
+                    1,
+                    status.name()
+            );
+
+            try (
+                    ResultSet rs =
+                            stmt.executeQuery()
+            ) {
+
+                while (rs.next()) {
+
+                    coletas.add(
+                            new Coleta(
+                                    rs.getInt("id"),
+                                    rs.getString("cliente"),
+                                    rs.getString("endereco"),
+                                    rs.getInt("quantidade_itens"),
+                                    Prioridade.valueOf(
+                                            rs.getString("prioridade")
+                                    ),
+                                    StatusColeta.valueOf(
+                                            rs.getString("status")
+                                    ),
+                                    rs.getTimestamp("data_criacao")
+                                            .toLocalDateTime()
+                            )
+                    );
+                }
+            }
+
+            return coletas;
+
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
