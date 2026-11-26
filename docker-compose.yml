@@ -2,31 +2,36 @@ services:
 
   postgres:
     image: postgres:17
-
     container_name: filafacil-postgres
 
-    environment:
-      POSTGRES_DB: filafacil
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 2604
+    env_file:
+      - .env
 
     ports:
       - "5432:5432"
 
   api-blue:
-
     build: .
-
     container_name: filafacil-blue
+
+    env_file:
+      - .env
 
     ports:
       - "8080:8080"
 
-    environment:
-      DB_URL: jdbc:postgresql://postgres:5432/filafacil
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      APP_ENV: BLUE
+    depends_on:
+      - postgres
+
+  api-green:
+    build: .
+    container_name: filafacil-green
+
+    env_file:
+      - .env
+
+    ports:
+      - "8081:8080"
 
     depends_on:
       - postgres
