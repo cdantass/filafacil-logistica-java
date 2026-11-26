@@ -1,0 +1,15 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="dev" type="Application" factoryName="Application">
+    <envs>
+      <env name="DB_URL" value="jdbc:postgresql://localhost:5432/filafacil" />
+      <env name="DB_USER" value="postgres" />
+      <env name="DB_PASSWORD" value="2604" />
+      <env name="APP_ENV" value="BLUE" />
+    </envs>
+    <option name="MAIN_CLASS_NAME" value="com.apidevops.dev.DevApplication" />
+    <module name="dev" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

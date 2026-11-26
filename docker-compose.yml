@@ -1,0 +1,32 @@
+services:
+
+  postgres:
+    image: postgres:17
+
+    container_name: filafacil-postgres
+
+    environment:
+      POSTGRES_DB: filafacil
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 2604
+
+    ports:
+      - "5432:5432"
+
+  api-blue:
+
+    build: .
+
+    container_name: filafacil-blue
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/filafacil
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      APP_ENV: BLUE
+
+    depends_on:
+      - postgres
