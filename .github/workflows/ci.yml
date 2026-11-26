@@ -39,7 +39,7 @@ jobs:
     env:
       DB_URL: jdbc:postgresql://localhost:5432/filafacil
       DB_USER: postgres
-      DB_PASSWORD: postgres
+      DB_PASSWORD: 2604
       APP_ENV: CI
 
     steps:
