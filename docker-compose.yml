@@ -22,16 +22,3 @@ services:
 
     depends_on:
       - postgres
-
-  api-green:
-    build: .
-    container_name: filafacil-green
-
-    env_file:
-      - .env
-
-    ports:
-      - "8081:8080"
-
-    depends_on:
-      - postgres
