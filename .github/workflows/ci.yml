@@ -25,7 +25,7 @@ jobs:
         env:
           POSTGRES_DB: filafacil
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_PASSWORD: 2604
 
         ports:
           - 5432:5432
