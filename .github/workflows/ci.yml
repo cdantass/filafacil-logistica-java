@@ -17,11 +17,30 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    services:
+
+      postgres:
+        image: postgres:17
+
+        env:
+          POSTGRES_DB: filafacil
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+
+        ports:
+          - 5432:5432
+
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     env:
-      DB_URL: ${{ secrets.DB_URL }}
-      DB_USER: ${{ secrets.DB_USER }}
-      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      APP_ENV: ${{ secrets.APP_ENV }}
+      DB_URL: jdbc:postgresql://localhost:5432/filafacil
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      APP_ENV: CI
 
     steps:
 
@@ -42,10 +61,10 @@ jobs:
           restore-keys: |
             maven-
 
-      - name: Executar testes
+      - name: Executar Testes
         run: mvn test
 
-      - name: Gerar package
+      - name: Gerar Package
         run: mvn clean package -DskipTests
 
       - name: Upload do JAR
@@ -61,11 +80,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build Docker Image
-        run: |
-          docker build \
-            -t ${{ secrets.DOCKER_USERNAME }}/filafacil-devops-api:latest .
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/filafacil-devops-api:latest .
 
       - name: Push Docker Image
-        run: |
-          docker push \
-            ${{ secrets.DOCKER_USERNAME }}/filafacil-devops-api:latest
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/filafacil-devops-api:latest
